@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block title %}AI Interview — PrepFlow{% endblock %}
+{% block extra_head %}
+<style>
+.interview-wrap { max-width: 860px; margin: 0 auto; padding: 2rem; }
+.setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.interview-panel { display: none; }
+.interview-panel.active { display: block; }
+.q-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.q-number { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+.q-text { font-size: 1.1rem; font-weight: 300; line-height: 1.6; margin-bottom: 0.75rem; }
+.q-type { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.q-hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.75rem; padding: 0.75rem; background: var(--surface2); border-radius: 4px; font-style: italic; }
+textarea.answer-box { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.7; padding: 1.25rem; outline: none; resize: vertical; min-height: 160px; transition: border-color 0.2s; }
+textarea.answer-box:focus { border-color: var(--accent); }
+.feedback-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.feedback-score { font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 300; line-height: 1; margin-bottom: 1rem; }
+.feedback-section { margin-top: 1rem; }
+.feedback-section h4 { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; }
+.feedback-section p { font-size: 0.875rem; color: var(--accent-light); line-height: 1.6; }
+.bullet-list { list-style: none; }
+.bullet-list li { font-size: 0.8rem; color: var(--accent-light); padding: 0.3rem 0; padding-left: 1rem; position: relative; }
+.bullet-list li::before { content: '·'; position: absolute; left: 0; color: var(--muted); }
+.progress-bar-wrap { background: var(--surface2); border-radius: 100px; height: 4px; overflow: hidden; margin-bottom: 0.5rem; }
+.progress-bar { height: 100%; background: var(--text); border-radius: 100px; transition: width 0.5s ease; }
+.result-panel { text-align: center; padding: 3rem 2rem; }
+.result-score { font-family: 'JetBrains Mono', monospace; font-size: 5rem; font-weight: 300; line-height: 1; }
+@media (max-width: 600px) { .setup-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+<div class="interview-wrap">
+  <div style="margin-bottom:2rem;">
+    <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:0.5rem;">AI Interview · by Aditya Upadhyay</div>
+    <h1 style="font-size:1.8rem; font-weight:300; letter-spacing:-0.03em;">Interview Simulator</h1>
+    <p style="color:var(--accent); font-size:0.875rem; margin-top:0.25rem;">Configure your session and practice with AI-generated questions.</p>
+  </div>
+
+  <!-- SETUP PANEL -->
+  <div class="interview-panel active" id="panel-setup">
+    <div class="setup-card">
+      <div class="setup-grid">
+        <div>
+          <label class="label">Target Role</label>
+          <input id="cfg-role" class="input" placeholder="e.g. Software Engineer" value="Software Engineer">
+        </div>
+        <div>
+          <label class="label">Topic / Domain</label>
+          <input id="cfg-topic" class="input" placeholder="e.g. System Design" value="Python">
+        </div>
+        <div>
+          <label class="label">Difficulty</label>
+          <select id="cfg-difficulty" class="select">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Questions</label>
+          <select id="cfg-count" class="select">
+            <option value="3">3 Questions</option>
+            <option value="5" selected>5 Questions</option>
+            <option value="7">7 Questions</option>
+            <option value="10">10 Questions</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="startInterview()" id="start-btn" class="btn btn-primary" style="padding:0.75rem 2rem;">
+        Start Interview →
+      </button>
+    </div>
+  </div>
+
+  <!-- LOADING PANEL -->
+  <div class="interview-panel" id="panel-loading">
+    <div style="text-align:center; padding:4rem 2rem;">
+      <div class="loader" style="width:32px; height:32px; border-width:3px; margin:0 auto 1.5rem;"></div>
+      <div class="mono" style="color:var(--muted); font-size:0.85rem;" id="loading-msg">Generating questions...</div>
+    </div>
+  </div>
+
+  <!-- INTERVIEW PANEL -->
+  <div class="interview-panel" id="panel-interview">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <div class="mono" style="font-size:0.75rem; color:var(--muted);" id="interview-meta"></div>
+        <div class="progress-bar-wrap" style="width:200px; margin-top:0.5rem;">
+          <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span class="mono" style="font-size:0.75rem; color:var(--muted);" id="q-counter">1 / 5</span>
+        <button onclick="endInterviewEarly()" class="btn btn-ghost" style="font-size:0.75rem; padding:0.4rem 0.9rem;">End</button>
+      </div>
+    </div>
+
+    <div class="q-card" id="question-card">
+      <div class="q-number" id="q-number">Question 1</div>
+      <div class="q-text" id="q-text"></div>
+      <span class="q-type" id="q-type"></span>
+      <div class="q-hint" id="q-hint"></div>
+    </div>
+
+    <div>
+      <label class="label">Your Answer</label>
+      <textarea class="answer-box" id="answer-box" placeholder="Type your answer here... Be detailed and specific. The AI will evaluate and provide feedback."></textarea>
+    </div>
+
+    <div id="feedback-area"></div>
+
+    <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;" id="action-btns">
+      <button onclick="submitAnswer()" id="submit-btn" class="btn btn-primary" style="padding:0.75rem 1.5rem;">
+        Submit Answer
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT PANEL -->
+  <div class="interview-panel" id="panel-result">
+    <div class="result-panel">
+      <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:1rem; text-transform:uppercase; letter-spacing:0.1em;">Interview Complete</div>
+      <div class="result-score" id="result-score">—</div>
+      <div style="color:var(--muted); font-size:0.875rem; margin:0.5rem 0 2rem;">/ 10.0 average score</div>
+      <div id="result-msg" style="color:var(--accent); font-size:1rem; margin-bottom:2rem;"></div>
+      <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="/interview" class="btn btn-ghost" style="padding:0.75rem 1.5rem;">New Session</a>
+        <a href="/dashboard" class="btn btn-primary" style="padding:0.75rem 1.5rem;">View Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── State ────────────────────────────────────────────────────────
+let interviewId = null;
+let questions   = [];
+let currentQ    = 0;
+let answered    = false;
+let sessionRole = '';
+
+// ── Helpers ──────────────────────────────────────────────────────
+function showPanel(id) {
+  document.querySelectorAll('.interview-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+function setBtn(html) {
+  document.getElementById('action-btns').innerHTML = html;
+}
+
+function getScoreClass(s) {
+  return s >= 7 ? 'score-high' : s >= 4 ? 'score-mid' : 'score-low';
+}
+
+// ── Start Interview ──────────────────────────────────────────────
+async function startInterview() {
+  const role       = document.getElementById('cfg-role').value.trim()       || 'Software Engineer';
+  const topic      = document.getElementById('cfg-topic').value.trim()      || 'General';
+  const difficulty = document.getElementById('cfg-difficulty').value;
+  const count      = parseInt(document.getElementById('cfg-count').value, 10);
+
+  sessionRole = role;
+  showPanel('loading');
+  document.getElementById('loading-msg').textContent =
+    `Generating ${count} ${difficulty} questions for ${role} · ${topic}…`;
+
+  const res = await api('/api/interview/start', {
+    method: 'POST',
+    body: JSON.stringify({ role, topic, difficulty, count })
+  });
+
+  if (res.error) {
+    showToast(res.error, 'error');
+    showPanel('setup');
+    return;
+  }
+
+  interviewId = res.interview_id;
+  questions   = res.questions || [];
+  currentQ    = 0;
+  answered    = false;
+
+  if (!questions.length) {
+    showToast('No questions returned — check your API key.', 'error');
+    showPanel('setup');
+    return;
+  }
+
+  document.getElementById('interview-meta').textContent =
+    `${role} · ${topic} · ${difficulty}`;
+  showPanel('interview');
+  renderQuestion();
+}
+
+// ── Render current question ──────────────────────────────────────
+function renderQuestion() {
+  answered = false;
+  const q   = questions[currentQ];
+  const tot = questions.length;
+
+  document.getElementById('q-number').textContent  = `Question ${currentQ + 1} of ${tot}`;
+  document.getElementById('q-text').textContent    = q.question;
+  document.getElementById('q-type').textContent    = q.type || 'technical';
+  document.getElementById('q-hint').textContent    = q.hint ? `💡 ${q.hint}` : '';
+  document.getElementById('q-counter').textContent = `${currentQ + 1} / ${tot}`;
+  document.getElementById('progress-bar').style.width =
+    `${(currentQ / tot) * 100}%`;
+
+  document.getElementById('answer-box').value = '';
+  document.getElementById('answer-box').focus();
+  document.getElementById('feedback-area').innerHTML = '';
+
+  setBtn(`<button id="submit-btn" class="btn btn-primary"
+    style="padding:0.75rem 1.5rem;" onclick="submitAnswer()">
+    Submit Answer
+  </button>`);
+}
+
+// ── Submit answer ────────────────────────────────────────────────
+async function submitAnswer() {
+  if (answered) return;
+
+  const answer = document.getElementById('answer-box').value.trim();
+  if (!answer) {
+    showToast('Please write an answer before submitting.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled   = true;
+  btn.innerHTML  = '<span class="loader"></span>&nbsp; Evaluating…';
+
+  const q = questions[currentQ];
+
+  const res = await api('/api/interview/submit', {
+    method: 'POST',
+    body: JSON.stringify({
+      interview_id: interviewId,
+      question:     q.question,
+      answer:       answer,
+      role:         sessionRole
+    })
+  });
+
+  if (res.error) {
+    showToast(res.error, 'error');
+    btn.disabled  = false;
+    btn.innerHTML = 'Submit Answer';
+    return;
+  }
+
+  answered = true;
+  renderFeedback(res.evaluation);
+}
+
+// ── Render AI feedback ───────────────────────────────────────────
+function renderFeedback(ev) {
+  const sc    = ev.score ?? 5;
+  const cls   = getScoreClass(sc);
+  const isLast = currentQ >= questions.length - 1;
+
+  const strengthsHtml = ev.strengths && ev.strengths.length
+    ? `<div class="feedback-section">
+         <h4>✓ Strengths</h4>
+         <ul class="bullet-list">
+           ${ev.strengths.map(s => `<li style="color:var(--green)">${s}</li>`).join('')}
+         </ul>
+       </div>`
+    : '';
+
+  const improvementsHtml = ev.improvements && ev.improvements.length
+    ? `<div class="feedback-section">
+         <h4>↑ Improvements</h4>
+         <ul class="bullet-list">
+           ${ev.improvements.map(s => `<li>${s}</li>`).join('')}
+         </ul>
+       </div>`
+    : '';
+
+  const modelHtml = ev.model_answer
+    ? `<div class="feedback-section">
+         <h4>Model Answer</h4>
+         <p style="font-style:italic; border-left:2px solid var(--border);
+            padding-left:1rem; margin-left:0;">${ev.model_answer}</p>
+       </div>`
+    : '';
+
+  document.getElementById('feedback-area').innerHTML = `
+    <div class="feedback-card">
+      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem;">
+        <span class="score-badge ${cls}" style="font-family:'JetBrains Mono',monospace;
+          font-size:1.5rem; padding:0.4rem 1rem;">
+          ${sc}<span style="font-size:0.9rem; opacity:0.6">/10</span>
+        </span>
+        <span style="font-size:0.85rem; color:var(--accent);">AI Evaluation</span>
+      </div>
+      <div class="feedback-section">
+        <h4>Feedback</h4>
+        <p>${ev.feedback}</p>
+      </div>
+      ${strengthsHtml}
+      ${improvementsHtml}
+      ${modelHtml}
+    </div>`;
+
+  // Update action buttons
+  if (isLast) {
+    setBtn(`<button class="btn btn-green" style="padding:0.75rem 1.5rem;"
+      onclick="finishInterview()">Finish Interview ✓</button>`);
+  } else {
+    const remaining = questions.length - currentQ - 1;
+    setBtn(`<button class="btn btn-primary" style="padding:0.75rem 1.5rem;"
+      onclick="nextQuestion()">
+      Next Question → <span style="opacity:0.5; font-size:0.75rem;">(${remaining} left)</span>
+    </button>`);
+  }
+}
+
+// ── Next question ────────────────────────────────────────────────
+function nextQuestion() {
+  currentQ++;
+  renderQuestion();
+  // Smooth scroll back to question card
+  document.getElementById('question-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Finish interview ─────────────────────────────────────────────
+async function finishInterview() {
+  const res   = await api('/api/interview/end', {
+    method: 'POST',
+    body: JSON.stringify({ interview_id: interviewId })
+  });
+  const score = res.score ?? 0;
+
+  document.getElementById('result-score').textContent = score.toFixed(1);
+  document.getElementById('result-msg').textContent   =
+    score >= 8 ? '🎉 Excellent! You\'re interview-ready.' :
+    score >= 6 ? '👍 Good work — keep practicing!' :
+    score >= 4 ? '📚 Decent start. Focus on your weak areas.' :
+                 '💪 Keep going. Every session makes you better.';
+  document.getElementById('progress-bar').style.width = '100%';
+  showPanel('result');
+}
+
+async function endInterviewEarly() {
+  if (!questions.length) { showPanel('setup'); return; }
+  if (!confirm('End this interview session early?')) return;
+  await finishInterview();
+}
+
+// Ctrl+Enter to submit
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    const btn = document.getElementById('submit-btn');
+    if (btn && !btn.disabled) submitAnswer();
+  }
+});
+</script>
+{% endblock %}

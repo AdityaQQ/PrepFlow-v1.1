@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PrepFlow{% endblock %}
+{% block extra_head %}
+<style>
+.dash-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+.dash-header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.dash-header h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: -0.03em; }
+.dash-header .sub { color: var(--accent); font-size: 0.85rem; margin-top: 0.25rem; font-family: 'JetBrains Mono', monospace; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 2rem; }
+.stat-card { background: var(--surface); padding: 1.5rem; }
+.stat-card .label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+.stat-card .value { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 300; line-height: 1; }
+.stat-card .sublabel { font-size: 0.75rem; color: var(--muted); margin-top: 0.5rem; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+.chart-card h3 { font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1.5rem; }
+.history-row { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.history-row:last-child { border-bottom: none; }
+.history-role { flex: 1; }
+.history-role .role { font-size: 0.875rem; font-weight: 500; }
+.history-role .topic { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.history-date { font-size: 0.7rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.action-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; text-decoration: none; color: var(--text); transition: all 0.2s; display: block; }
+.action-card:hover { border-color: var(--accent); background: var(--surface2); }
+.action-card .icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+.action-card .title { font-size: 0.9rem; font-weight: 500; margin-bottom: 0.25rem; }
+.action-card .desc { font-size: 0.75rem; color: var(--muted); }
+.areas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.area-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: var(--surface2); border-radius: 4px; }
+.area-name { font-size: 0.8rem; }
+.area-score { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } .areas-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+<div class="dash-wrap">
+
+  <div class="dash-header">
+    <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:0.5rem;">PrepFlow Dashboard · Aditya Upadhyay</div>
+    <h1>Welcome back, <span id="user-name">...</span></h1>
+    <div class="sub" id="current-date"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="label">Total Interviews</div><div class="value" id="stat-total">—</div><div class="sublabel">completed sessions</div></div>
+    <div class="stat-card"><div class="label">Avg Score</div><div class="value" id="stat-avg">—</div><div class="sublabel">out of 10</div></div>
+    <div class="stat-card"><div class="label">Active Days</div><div class="value" id="stat-streak">—</div><div class="sublabel">last 30 days</div></div>
+    <div class="stat-card"><div class="label">Level</div><div class="value" id="stat-level">—</div><div class="sublabel">based on avg score</div></div>
+  </div>
+
+  <!-- Quick Actions -->
+  <p class="mono" style="font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;">Quick Start</p>
+  <div class="quick-actions">
+    <a href="/interview" class="action-card">
+      <div class="icon">🤖</div>
+      <div class="title">AI Interview</div>
+      <div class="desc">Practice with AI-generated questions</div>
+    </a>
+    <a href="/coding" class="action-card">
+      <div class="icon">💻</div>
+      <div class="title">Coding Round</div>
+      <div class="desc">DSA & system design problems</div>
+    </a>
+    <a href="/resume" class="action-card">
+      <div class="icon">📄</div>
+      <div class="title">Resume Interview</div>
+      <div class="desc">Questions based on your resume</div>
+    </a>
+    <a href="/history" class="action-card">
+      <div class="icon">📊</div>
+      <div class="title">View History</div>
+      <div class="desc">All past interview sessions</div>
+    </a>
+  </div>
+
+  <!-- Charts -->
+  <div class="two-col">
+    <div class="chart-card">
+      <h3>Score Progress</h3>
+      <canvas id="progressChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Topic Performance</h3>
+      <canvas id="topicChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Weak & Strong Areas -->
+  <div class="two-col">
+    <div class="chart-card">
+      <h3>⚠ Weak Areas</h3>
+      <div id="weak-areas">
+        <div style="color:var(--muted); font-size:0.8rem; text-align:center; padding:2rem;">No data yet. Start practicing!</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>✓ Strong Areas</h3>
+      <div id="strong-areas">
+        <div style="color:var(--muted); font-size:0.8rem; text-align:center; padding:2rem;">No data yet. Start practicing!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent History -->
+  <div class="chart-card" style="margin-top:1.5rem;">
+    <h3>Recent Interviews</h3>
+    <div id="recent-history">
+      <div style="color:var(--muted); font-size:0.8rem; text-align:center; padding:2rem;">No interviews yet. <a href="/interview" style="color:var(--text);">Start one now →</a></div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const userName = '{{ user }}';
+document.getElementById('user-name').textContent = userName || 'there';
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+let progressChart, topicChart;
+
+function getScoreClass(score) {
+  if (score >= 7) return 'score-high';
+  if (score >= 4) return 'score-mid';
+  return 'score-low';
+}
+
+function getLevel(avg) {
+  if (avg >= 8) return 'Expert';
+  if (avg >= 6) return 'Pro';
+  if (avg >= 4) return 'Mid';
+  return 'Beginner';
+}
+
+async function loadDashboard() {
+  const [stats, progress] = await Promise.all([
+    api('/api/dashboard/stats'),
+    api('/api/dashboard/progress')
+  ]);
+
+  if (stats.error) return;
+
+  document.getElementById('stat-total').textContent = stats.total_interviews;
+  document.getElementById('stat-avg').textContent = stats.average_score || '0.0';
+  document.getElementById('stat-streak').textContent = stats.streak_days;
+  document.getElementById('stat-level').textContent = getLevel(stats.average_score);
+
+  // Progress chart
+  const days = (progress || []).reverse();
+  if (progressChart) progressChart.destroy();
+  const ctx1 = document.getElementById('progressChart').getContext('2d');
+  progressChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: days.map(d => d.day.slice(5)),
+      datasets: [{
+        data: days.map(d => d.avg_score.toFixed(1)),
+        borderColor: '#888888',
+        backgroundColor: 'rgba(136,136,136,0.05)',
+        borderWidth: 1.5,
+        pointRadius: 3,
+        pointBackgroundColor: '#888888',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } } },
+        y: { min: 0, max: 10, grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } } }
+      }
+    }
+  });
+
+  // Topic chart
+  const allTopics = [...(stats.weak_areas || []), ...(stats.strong_areas || [])];
+  const unique = allTopics.filter((t, i, arr) => arr.findIndex(x => x.topic === t.topic) === i);
+  if (topicChart) topicChart.destroy();
+  const ctx2 = document.getElementById('topicChart').getContext('2d');
+  topicChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: unique.map(t => t.topic),
+      datasets: [{
+        data: unique.map(t => t.avg_score.toFixed(1)),
+        backgroundColor: unique.map(t => t.avg_score >= 7 ? 'rgba(62,207,142,0.3)' : t.avg_score >= 4 ? 'rgba(245,166,35,0.3)' : 'rgba(255,68,68,0.3)'),
+        borderColor: unique.map(t => t.avg_score >= 7 ? '#3ecf8e' : t.avg_score >= 4 ? '#f5a623' : '#ff4444'),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } } },
+        y: { min: 0, max: 10, grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } } }
+      }
+    }
+  });
+
+  // Weak areas
+  if (stats.weak_areas && stats.weak_areas.length) {
+    document.getElementById('weak-areas').innerHTML = stats.weak_areas.map(a => `
+      <div class="area-item">
+        <span class="area-name">${a.topic}</span>
+        <span class="area-score score-badge score-low">${a.avg_score.toFixed(1)}/10</span>
+      </div>`).join('');
+  }
+
+  // Strong areas
+  if (stats.strong_areas && stats.strong_areas.length) {
+    document.getElementById('strong-areas').innerHTML = stats.strong_areas.map(a => `
+      <div class="area-item">
+        <span class="area-name">${a.topic}</span>
+        <span class="area-score score-badge score-high">${a.avg_score.toFixed(1)}/10</span>
+      </div>`).join('');
+  }
+
+  // Recent history
+  if (stats.recent && stats.recent.length) {
+    document.getElementById('recent-history').innerHTML = stats.recent.map(r => `
+      <div class="history-row">
+        <div class="history-role">
+          <div class="role">${r.role}</div>
+          <div class="topic">${r.topic} · ${r.difficulty}</div>
+        </div>
+        <span class="score-badge ${getScoreClass(r.score)}">${r.score.toFixed(1)}/10</span>
+        <span class="history-date">${r.date.slice(0,10)}</span>
+      </div>`).join('');
+  }
+}
+
+loadDashboard();
+</script>
+{% endblock %}

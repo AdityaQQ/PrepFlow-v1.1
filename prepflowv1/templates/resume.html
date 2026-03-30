@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Resume Interview — PrepFlow{% endblock %}
+{% block extra_head %}
+<style>
+.resume-wrap { max-width: 860px; margin: 0 auto; padding: 2rem; }
+.upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); }
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--surface2); }
+.upload-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.panel { display: none; }
+.panel.active { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+<div class="resume-wrap">
+
+  <div style="margin-bottom:2rem;">
+    <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:0.25rem;">Resume Interview · by Aditya Upadhyay</div>
+    <h1 style="font-size:1.8rem; font-weight:300; letter-spacing:-0.03em;">Resume-Based Interview</h1>
+    <p style="color:var(--accent); font-size:0.875rem; margin-top:0.25rem;">Upload your resume and get AI-generated questions tailored to your experience.</p>
+  </div>
+
+  <!-- Upload Panel -->
+  <div class="panel active" id="panel-upload">
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('dragover')">
+      <div class="upload-icon">📄</div>
+      <div style="font-size:1rem; font-weight:400; margin-bottom:0.5rem;">Drop your resume here</div>
+      <div style="color:var(--muted); font-size:0.85rem; margin-bottom:1.5rem;">PDF or TXT format · Max 16MB</div>
+      <button class="btn btn-ghost" style="pointer-events:none;">Choose File</button>
+    </div>
+    <input type="file" id="file-input" accept=".pdf,.txt" style="display:none" onchange="handleFileSelect(event)">
+    <div id="upload-status" style="margin-top:1rem; display:none;" class="card">
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <span id="file-name" class="mono" style="font-size:0.8rem; flex:1;"></span>
+        <span id="upload-indicator"></span>
+      </div>
+    </div>
+    <div id="start-resume-btn" style="margin-top:1.5rem; display:none;">
+      <button onclick="startResumeInterview()" class="btn btn-primary" style="padding:0.75rem 2rem;">
+        Start Resume Interview →
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Panel -->
+  <div class="panel" id="panel-loading">
+    <div style="text-align:center; padding:4rem;">
+      <div class="loader" style="width:32px; height:32px; border-width:3px; margin:0 auto 1.5rem;"></div>
+      <div class="mono" style="color:var(--muted);">Analyzing resume and generating questions...</div>
+    </div>
+  </div>
+
+  <!-- Interview Panel (reuses same logic) -->
+  <div class="panel" id="panel-interview">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+      <div class="mono" style="font-size:0.75rem; color:var(--muted);">Resume-Based Interview</div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span class="mono" style="font-size:0.75rem; color:var(--muted);" id="q-counter">1 / 5</span>
+      </div>
+    </div>
+
+    <div class="card" id="question-card" style="margin-bottom:1.5rem;">
+      <div class="mono" style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:1rem;" id="q-number">Question 1</div>
+      <div style="font-size:1.1rem; font-weight:300; line-height:1.6; margin-bottom:0.75rem;" id="q-text"></div>
+      <span class="q-type" id="q-type" style="display:inline-flex; align-items:center; padding:0.2rem 0.6rem; border-radius:100px; font-size:0.7rem; font-family:'JetBrains Mono',monospace; background:var(--surface2); border:1px solid var(--border); color:var(--muted);"></span>
+    </div>
+
+    <div>
+      <label class="label">Your Answer</label>
+      <textarea id="answer-box" style="width:100%; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'Inter',sans-serif; font-size:0.9rem; line-height:1.7; padding:1.25rem; outline:none; resize:vertical; min-height:160px;" placeholder="Type your answer here..."></textarea>
+    </div>
+
+    <div id="feedback-area"></div>
+
+    <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;" id="action-btns">
+      <button onclick="submitAnswer()" id="submit-btn" class="btn btn-primary" style="padding:0.75rem 1.5rem;">Submit Answer</button>
+    </div>
+  </div>
+
+  <!-- Result Panel -->
+  <div class="panel" id="panel-result">
+    <div style="text-align:center; padding:3rem 2rem;">
+      <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:1rem; text-transform:uppercase; letter-spacing:0.1em;">Resume Interview Complete</div>
+      <div class="mono" style="font-size:5rem; font-weight:300; line-height:1;" id="result-score">—</div>
+      <div style="color:var(--muted); font-size:0.875rem; margin:0.5rem 0 2rem;">/ 10.0 average score</div>
+      <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="/resume" class="btn btn-ghost" style="padding:0.75rem 1.5rem;">New Session</a>
+        <a href="/dashboard" class="btn btn-primary" style="padding:0.75rem 1.5rem;">View Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let uploadedOk = false;
+let interviewId, questions = [], currentQ = 0;
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${id}`).classList.add('active');
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.add('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) uploadFile(file);
+}
+
+async function uploadFile(file) {
+  const status = document.getElementById('upload-status');
+  const indicator = document.getElementById('upload-indicator');
+  document.getElementById('file-name').textContent = file.name;
+  status.style.display = 'block';
+  indicator.innerHTML = '<span class="loader"></span>';
+
+  const formData = new FormData();
+  formData.append('resume', file);
+
+  const res = await fetch('/api/resume/upload', { method: 'POST', body: formData, credentials: 'include' });
+  const data = await res.json();
+
+  if (data.success) {
+    indicator.innerHTML = '<span style="color:var(--green); font-family:\'JetBrains Mono\',monospace; font-size:0.75rem;">✓ Uploaded</span>';
+    uploadedOk = true;
+    document.getElementById('start-resume-btn').style.display = 'block';
+  } else {
+    indicator.innerHTML = `<span style="color:var(--red); font-size:0.75rem;">${data.error}</span>`;
+  }
+}
+
+async function startResumeInterview() {
+  if (!uploadedOk) { showToast('Please upload a resume first', 'error'); return; }
+  showPanel('loading');
+
+  const res = await api('/api/resume/interview', { method: 'POST', body: JSON.stringify({}) });
+  if (res.error) { showToast(res.error, 'error'); showPanel('upload'); return; }
+
+  interviewId = res.interview_id;
+  questions = res.questions;
+  currentQ = 0;
+  showPanel('interview');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[currentQ];
+  document.getElementById('q-number').textContent = `Question ${currentQ + 1}`;
+  document.getElementById('q-text').textContent = q.question;
+  document.getElementById('q-type').textContent = q.type || 'experience';
+  document.getElementById('q-counter').textContent = `${currentQ + 1} / ${questions.length}`;
+  document.getElementById('answer-box').value = '';
+  document.getElementById('feedback-area').innerHTML = '';
+  document.getElementById('action-btns').innerHTML = `<button onclick="submitAnswer()" id="submit-btn" class="btn btn-primary" style="padding:0.75rem 1.5rem;">Submit Answer</button>`;
+}
+
+async function submitAnswer() {
+  const answer = document.getElementById('answer-box').value.trim();
+  if (!answer) { showToast('Please write an answer.', 'error'); return; }
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<span class="loader"></span> Evaluating...';
+  btn.disabled = true;
+
+  const q = questions[currentQ];
+  const res = await api('/api/interview/submit', { method: 'POST', body: JSON.stringify({ interview_id: interviewId, question: q.question, answer, role: 'Resume Based' }) });
+  if (res.error) { showToast(res.error, 'error'); btn.innerHTML = 'Submit Answer'; btn.disabled = false; return; }
+
+  const ev = res.evaluation;
+  const sc = ev.score >= 7 ? 'score-high' : ev.score >= 4 ? 'score-mid' : 'score-low';
+  document.getElementById('feedback-area').innerHTML = `<div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:1.5rem; margin-top:1.5rem;"><div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;"><span class="score-badge ${sc}" style="font-size:1.2rem; font-family:'JetBrains Mono',monospace;">${ev.score}/10</span></div><p style="color:var(--accent-light); font-size:0.875rem; line-height:1.6;">${ev.feedback}</p>${ev.model_answer ? `<div style="margin-top:1rem; padding:0.75rem; background:var(--surface); border-radius:4px; font-size:0.8rem; color:var(--muted); font-style:italic;">${ev.model_answer}</div>` : ''}</div>`;
+
+  const isLast = currentQ >= questions.length - 1;
+  document.getElementById('action-btns').innerHTML = isLast
+    ? `<button onclick="finishInterview()" class="btn btn-green" style="padding:0.75rem 1.5rem;">Finish ✓</button>`
+    : `<button onclick="nextQuestion()" class="btn btn-primary" style="padding:0.75rem 1.5rem;">Next →</button>`;
+}
+
+function nextQuestion() { currentQ++; renderQuestion(); }
+
+async function finishInterview() {
+  const res = await api('/api/interview/end', { method: 'POST', body: JSON.stringify({ interview_id: interviewId }) });
+  document.getElementById('result-score').textContent = (res.score || 0).toFixed(1);
+  showPanel('result');
+}
+</script>
+{% endblock %}

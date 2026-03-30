@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}PrepFlow — by Aditya Upadhyay{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: #222222;
+    --text: #ffffff;
+    --muted: #555555;
+    --accent: #888888;
+    --accent-light: #aaaaaa;
+    --green: #3ecf8e;
+    --red: #ff4444;
+    --yellow: #f5a623;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 60px;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .navbar-logo { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
+  .navbar-logo span { color: var(--accent); }
+  .navbar-links { display: flex; align-items: center; gap: 2rem; }
+  .navbar-links a { color: var(--accent); font-size: 0.8rem; text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.2s; }
+  .navbar-links a:hover { color: var(--text); }
+  .navbar-right { display: flex; align-items: center; gap: 1rem; }
+  .navbar-brand { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.2rem; border-radius: 4px; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; text-decoration: none; }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
+  .btn-ghost { background: transparent; color: var(--accent); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-green:hover { opacity: 0.85; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+  .card:hover { border-color: var(--accent); }
+  .input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.875rem; padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s; }
+  .input:focus { border-color: var(--accent); }
+  .input::placeholder { color: var(--muted); }
+  .select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.875rem; padding: 0.75rem 1rem; outline: none; cursor: pointer; appearance: none; }
+  .select:focus { border-color: var(--accent); }
+  .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; display: block; }
+  .page-wrap { padding-top: 60px; min-height: 100vh; }
+  .score-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+  .score-high { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
+  .score-mid { background: rgba(245,166,35,0.1); color: var(--yellow); border: 1px solid rgba(245,166,35,0.2); }
+  .score-low { background: rgba(255,68,68,0.1); color: var(--red); border: 1px solid rgba(255,68,68,0.2); }
+  .watermark { position: fixed; bottom: 1rem; right: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--border); z-index: 50; pointer-events: none; }
+  .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 999; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1.5rem; font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; animation: toastIn 0.3s ease; }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  .tab-btn { padding: 0.5rem 1.2rem; border-radius: 4px; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; cursor: pointer; border: 1px solid transparent; color: var(--muted); background: transparent; transition: all 0.2s; text-transform: uppercase; }
+  .tab-btn.active { background: var(--surface2); border-color: var(--border); color: var(--text); }
+  .tab-btn:hover { color: var(--text); }
+  footer { border-top: 1px solid var(--border); padding: 3rem 2rem; margin-top: 6rem; }
+  footer .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+  footer .footer-copy { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted); text-align: center; line-height: 1.8; }
+  footer .footer-links { display: flex; gap: 2rem; align-items: center; }
+  footer .footer-links a { color: var(--muted); text-decoration: none; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; transition: color 0.2s; }
+  footer .footer-links a:hover { color: var(--text); }
+  .github-icon { width: 16px; height: 16px; fill: currentColor; }
+  @media (max-width: 768px) {
+    .navbar-links { display: none; }
+    .navbar-brand { display: none; }
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="navbar-logo">prep<span>flow</span></a>
+  <div class="navbar-links">
+    <a href="/">Home</a>
+    <a href="/#features">Features</a>
+    <a href="/interview">Interview</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="https://github.com/AdityaQQ" target="_blank">GitHub</a>
+  </div>
+  <div class="navbar-right">
+    <span class="navbar-brand mono">Aditya Upadhyay</span>
+    {% if user %}
+      <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
+      <button onclick="logout()" class="btn btn-ghost">Logout</button>
+    {% else %}
+      <a href="/login" class="btn btn-ghost">Login</a>
+      <a href="/signup" class="btn btn-primary">Get Started</a>
+    {% endif %}
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="https://github.com/AdityaQQ" target="_blank">
+        <svg class="github-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        GitHub
+      </a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/interview">Interview</a>
+      <a href="/coding">Coding</a>
+    </div>
+    <div class="footer-copy">
+      © 2026 Aditya Upadhyay &nbsp;·&nbsp; Built by Aditya Upadhyay &nbsp;·&nbsp; Open Source by Aditya Upadhyay<br>
+      <a href="https://github.com/AdityaQQ" target="_blank" style="color: var(--accent); text-decoration: none;">github.com/AdityaQQ</a>
+    </div>
+  </div>
+</footer>
+
+<div class="watermark">Built by Aditya Upadhyay</div>
+
+<script>
+function showToast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/';
+}
+
+async function api(url, options={}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    ...options
+  });
+  return res.json();
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

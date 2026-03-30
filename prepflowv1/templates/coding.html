@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block title %}Coding Interview — PrepFlow{% endblock %}
+{% block extra_head %}
+<style>
+.coding-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+.coding-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+.problem-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; height: fit-content; }
+.editor-panel { display: flex; flex-direction: column; gap: 1rem; }
+.code-editor-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.editor-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+.editor-header .lang-select { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; padding: 0.3rem 0.6rem; cursor: pointer; }
+textarea#code-editor { width: 100%; background: #0d0d0d; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.7; padding: 1.25rem; border: none; outline: none; resize: none; min-height: 350px; tab-size: 4; }
+.problems-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+.problem-item { padding: 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.problem-item:hover, .problem-item.active { border-color: var(--accent); }
+.problem-item .p-title { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+.problem-item .p-meta { display: flex; gap: 0.75rem; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+.difficulty-tag { display: inline-flex; padding: 0.15rem 0.5rem; border-radius: 100px; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace; }
+.diff-easy { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
+.diff-medium { background: rgba(245,166,35,0.1); color: var(--yellow); border: 1px solid rgba(245,166,35,0.2); }
+.diff-hard { background: rgba(255,68,68,0.1); color: var(--red); border: 1px solid rgba(255,68,68,0.2); }
+.example-box { background: var(--surface2); border-radius: 4px; padding: 0.75rem; margin-top: 0.5rem; }
+.example-box code { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent-light); }
+.result-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+@media (max-width: 768px) { .coding-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+<div class="coding-wrap">
+
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+    <div>
+      <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:0.25rem;">Coding Interview · by Aditya Upadhyay</div>
+      <h1 style="font-size:1.8rem; font-weight:300; letter-spacing:-0.03em;">Coding Round</h1>
+    </div>
+    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+      <select id="topic-select" class="select" style="width:auto;">
+        <option value="arrays">Arrays</option>
+        <option value="strings">Strings</option>
+        <option value="trees">Trees</option>
+        <option value="graphs">Graphs</option>
+        <option value="dynamic programming">Dynamic Programming</option>
+        <option value="sorting">Sorting</option>
+        <option value="linked lists">Linked Lists</option>
+      </select>
+      <select id="diff-select" class="select" style="width:auto;">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+      <button onclick="loadProblems()" class="btn btn-ghost">Load Problems</button>
+    </div>
+  </div>
+
+  <div class="coding-layout">
+    <!-- Problem Panel -->
+    <div class="problem-panel">
+      <h3 style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:1rem;">Problems</h3>
+      <div id="problems-list" class="problems-list">
+        <div style="text-align:center; padding:2rem; color:var(--muted); font-size:0.85rem;">Click "Load Problems" to begin</div>
+      </div>
+      <div id="problem-detail" style="display:none;">
+        <h2 id="p-title" style="font-size:1rem; font-weight:500; margin-bottom:0.75rem;"></h2>
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;" id="p-tags"></div>
+        <div id="p-desc" style="font-size:0.875rem; color:var(--accent-light); line-height:1.7; margin-bottom:1rem;"></div>
+        <div>
+          <div class="mono" style="font-size:0.65rem; color:var(--muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.1em;">Examples</div>
+          <div id="p-examples"></div>
+        </div>
+        <div id="p-constraints" style="margin-top:1rem;"></div>
+      </div>
+    </div>
+
+    <!-- Editor Panel -->
+    <div class="editor-panel">
+      <div class="code-editor-wrap">
+        <div class="editor-header">
+          <div class="mono" style="font-size:0.75rem; color:var(--muted);">Code Editor</div>
+          <select id="lang-select" class="lang-select">
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+          </select>
+        </div>
+        <textarea id="code-editor" placeholder="# Select a problem and write your solution here...
+
+def solution(nums, target):
+    # Your code here
+    pass"></textarea>
+      </div>
+
+      <div style="display:flex; gap:0.75rem;">
+        <button onclick="evaluateCode()" id="eval-btn" class="btn btn-primary" style="padding:0.75rem 1.5rem; flex:1;">
+          Run & Evaluate →
+        </button>
+        <button onclick="clearEditor()" class="btn btn-ghost" style="padding:0.75rem 1rem;">Clear</button>
+      </div>
+
+      <div id="result-area" style="display:none;" class="result-box">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+          <div class="mono" style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">AI Evaluation</div>
+          <div id="code-score" class="score-badge"></div>
+        </div>
+        <div id="code-correctness" style="margin-bottom:1rem;"></div>
+        <div id="code-feedback" style="font-size:0.875rem; color:var(--accent-light); line-height:1.6; margin-bottom:1rem;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;" id="complexity-info"></div>
+        <div id="code-improvements"></div>
+        <div id="optimized-solution" style="display:none; margin-top:1rem;">
+          <div class="mono" style="font-size:0.65rem; color:var(--muted); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.1em;">Optimized Solution</div>
+          <pre id="opt-code" style="background:var(--surface2); padding:1rem; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; overflow-x:auto; color:var(--accent-light); white-space:pre-wrap;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentProblem = null;
+let allProblems    = [];
+
+async function loadProblems() {
+  const topic      = document.getElementById('topic-select').value;
+  const difficulty = document.getElementById('diff-select').value;
+  const list       = document.getElementById('problems-list');
+
+  list.innerHTML = '<div style="text-align:center;padding:2rem;"><span class="loader"></span><div class="mono" style="margin-top:1rem;color:var(--muted);font-size:0.8rem;">Generating problems…</div></div>';
+  document.getElementById('problem-detail').style.display = 'none';
+  document.getElementById('result-area').style.display    = 'none';
+
+  const res = await api(`/api/coding/problems?topic=${encodeURIComponent(topic)}&difficulty=${difficulty}`);
+
+  if (!Array.isArray(res) || !res.length) {
+    list.innerHTML = '<div style="color:var(--red);text-align:center;padding:1.5rem;font-size:0.85rem;">Failed to load — try again.</div>';
+    return;
+  }
+
+  allProblems = res;
+
+  list.innerHTML = res.map((p, i) => `
+    <div class="problem-item" id="pi-${i}" onclick="selectProblem(${i})">
+      <div class="p-title">${p.title}</div>
+      <div class="p-meta">
+        <span class="difficulty-tag diff-${p.difficulty}">${p.difficulty}</span>
+        ${(p.tags || []).slice(0, 2).map(t => `<span>${t}</span>`).join('')}
+      </div>
+    </div>`).join('');
+
+  selectProblem(0);
+}
+
+function selectProblem(idx) {
+  document.querySelectorAll('.problem-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('pi-' + idx);
+  if (el) el.classList.add('active');
+
+  const p = allProblems[idx];
+  if (!p) return;
+  currentProblem = p;
+
+  document.getElementById('p-title').textContent = p.title;
+  document.getElementById('p-tags').innerHTML =
+    `<span class="difficulty-tag diff-${p.difficulty}">${p.difficulty}</span>` +
+    (p.tags || []).map(t =>
+      `<span class="difficulty-tag" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);">${t}</span>`
+    ).join('');
+  document.getElementById('p-desc').textContent = p.description;
+  document.getElementById('p-examples').innerHTML = (p.examples || []).map(e =>
+    `<div class="example-box"><code><strong>Input:</strong> ${e.input}<br><strong>Output:</strong> ${e.output}</code></div>`
+  ).join('');
+  document.getElementById('p-constraints').innerHTML =
+    p.constraints && p.constraints.length
+      ? `<div class="mono" style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;">Constraints</div>` +
+        p.constraints.map(c =>
+          `<div style="font-size:0.75rem;color:var(--muted);font-family:'JetBrains Mono',monospace;padding:0.15rem 0;">• ${c}</div>`
+        ).join('')
+      : '';
+
+  document.getElementById('problem-detail').style.display = 'block';
+  document.getElementById('result-area').style.display    = 'none';
+  setStarterCode(p.title, document.getElementById('lang-select').value);
+}
+
+function setStarterCode(title, lang) {
+  const fname = title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  const starters = {
+    python:     `def ${fname}(self):\n    # TODO: implement your solution here\n    pass\n`,
+    javascript: `/**\n * @param {*} input\n * @return {*}\n */\nfunction ${fname}(input) {\n    // TODO: implement your solution here\n}\n`,
+    java:       `class Solution {\n    public void ${fname}() {\n        // TODO: implement your solution here\n    }\n}\n`,
+    cpp:        `class Solution {\npublic:\n    void ${fname}() {\n        // TODO: implement your solution here\n    }\n};\n`,
+  };
+  document.getElementById('code-editor').value = starters[lang] || starters.python;
+}
+
+document.getElementById('lang-select').addEventListener('change', function() {
+  if (currentProblem) setStarterCode(currentProblem.title, this.value);
+});
+
+async function evaluateCode() {
+  if (!currentProblem) { showToast('Select a problem first', 'error'); return; }
+
+  const code = document.getElementById('code-editor').value.trim();
+  if (!code) { showToast('Write some code first!', 'error'); return; }
+
+  const btn = document.getElementById('eval-btn');
+  btn.innerHTML = '<span class="loader"></span>&nbsp; Evaluating…';
+  btn.disabled  = true;
+
+  const res = await api('/api/coding/evaluate', {
+    method: 'POST',
+    body: JSON.stringify({
+      code,
+      problem:  `${currentProblem.title}: ${currentProblem.description}`,
+      language: document.getElementById('lang-select').value
+    })
+  });
+
+  btn.innerHTML = 'Run & Evaluate →';
+  btn.disabled  = false;
+
+  const sc  = res.score ?? 5;
+  const cls = sc >= 7 ? 'score-high' : sc >= 4 ? 'score-mid' : 'score-low';
+
+  document.getElementById('code-score').className   = `score-badge ${cls}`;
+  document.getElementById('code-score').textContent = `${sc}/10`;
+  document.getElementById('code-correctness').innerHTML =
+    `<span style="color:${res.correctness ? 'var(--green)' : 'var(--red)'};font-size:0.8rem;font-family:'JetBrains Mono',monospace;">
+      ${res.correctness ? '✓ Solution looks correct' : '✗ Solution may have issues — check edge cases'}
+    </span>`;
+  document.getElementById('code-feedback').textContent = res.feedback || '';
+  document.getElementById('complexity-info').innerHTML = `
+    <div style="background:var(--surface2);padding:0.75rem;border-radius:4px;">
+      <div class="mono" style="font-size:0.6rem;color:var(--muted);margin-bottom:0.3rem;">TIME COMPLEXITY</div>
+      <div class="mono" style="font-size:1rem;">${res.time_complexity || 'O(?)'}</div>
+    </div>
+    <div style="background:var(--surface2);padding:0.75rem;border-radius:4px;">
+      <div class="mono" style="font-size:0.6rem;color:var(--muted);margin-bottom:0.3rem;">SPACE COMPLEXITY</div>
+      <div class="mono" style="font-size:1rem;">${res.space_complexity || 'O(?)'}</div>
+    </div>`;
+  document.getElementById('code-improvements').innerHTML =
+    res.improvements && res.improvements.length
+      ? `<div class="mono" style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;margin-top:1rem;">Improvements</div>
+         <ul class="bullet-list">${res.improvements.map(i => `<li>${i}</li>`).join('')}</ul>`
+      : '';
+
+  if (res.optimized_solution) {
+    document.getElementById('opt-code').textContent = res.optimized_solution;
+    document.getElementById('optimized-solution').style.display = 'block';
+  } else {
+    document.getElementById('optimized-solution').style.display = 'none';
+  }
+
+  document.getElementById('result-area').style.display = 'block';
+  document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearEditor() {
+  if (currentProblem) setStarterCode(currentProblem.title, document.getElementById('lang-select').value);
+  else document.getElementById('code-editor').value = '';
+  document.getElementById('result-area').style.display = 'none';
+}
+
+document.getElementById('code-editor').addEventListener('keydown', function(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = this.selectionStart, end = this.selectionEnd;
+    this.value = this.value.substring(0, s) + '    ' + this.value.substring(end);
+    this.selectionStart = this.selectionEnd = s + 4;
+  }
+});
+
+// Auto-load on page open
+loadProblems();
+</script>
+{% endblock %}

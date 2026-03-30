@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}History — PrepFlow{% endblock %}
+{% block extra_head %}
+<style>
+.history-wrap { max-width: 900px; margin: 0 auto; padding: 2rem; }
+.history-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.history-table th { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+.history-table td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.history-table tr:last-child td { border-bottom: none; }
+.history-table tr:hover td { background: var(--surface2); }
+.filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+<div class="history-wrap">
+
+  <div style="margin-bottom:2rem;">
+    <div class="mono" style="font-size:0.7rem; color:var(--muted); margin-bottom:0.25rem;">Interview History · by Aditya Upadhyay</div>
+    <h1 style="font-size:1.8rem; font-weight:300; letter-spacing:-0.03em;">Session History</h1>
+    <p style="color:var(--accent); font-size:0.875rem; margin-top:0.25rem;">All your past interview sessions and scores.</p>
+  </div>
+
+  <div class="filter-bar">
+    <button class="tab-btn active" onclick="filterHistory('all', this)">All</button>
+    <button class="tab-btn" onclick="filterHistory('standard', this)">AI Interview</button>
+    <button class="tab-btn" onclick="filterHistory('resume', this)">Resume</button>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div id="history-loading" style="text-align:center; padding:3rem;">
+      <span class="loader"></span>
+    </div>
+    <table class="history-table" id="history-table" style="display:none;">
+      <thead>
+        <tr>
+          <th>Role / Topic</th>
+          <th>Type</th>
+          <th>Difficulty</th>
+          <th>Score</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+    <div id="history-empty" style="display:none; text-align:center; padding:3rem; color:var(--muted); font-size:0.875rem;">
+      No interviews yet. <a href="/interview" style="color:var(--text);">Start one now →</a>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allHistory = [];
+
+function getScoreClass(score) {
+  if (score >= 7) return 'score-high';
+  if (score >= 4) return 'score-mid';
+  return 'score-low';
+}
+
+async function loadHistory() {
+  const res = await api('/api/interview/history');
+  allHistory = res;
+  renderHistory(res);
+}
+
+function renderHistory(data) {
+  document.getElementById('history-loading').style.display = 'none';
+
+  if (!data || !data.length) {
+    document.getElementById('history-empty').style.display = 'block';
+    document.getElementById('history-table').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('history-table').style.display = 'table';
+  document.getElementById('history-empty').style.display = 'none';
+
+  document.getElementById('history-body').innerHTML = data.map(i => `
+    <tr>
+      <td>
+        <div style="font-weight:500;">${i.role}</div>
+        <div style="font-size:0.75rem; color:var(--muted); font-family:'JetBrains Mono',monospace;">${i.topic}</div>
+      </td>
+      <td><span class="mono" style="font-size:0.75rem; color:var(--muted);">${i.interview_type || 'standard'}</span></td>
+      <td><span class="mono" style="font-size:0.75rem; color:var(--muted);">${i.difficulty}</span></td>
+      <td>
+        ${i.completed 
+          ? `<span class="score-badge ${getScoreClass(i.score)}">${i.score.toFixed(1)}/10</span>`
+          : '<span style="color:var(--muted); font-size:0.75rem; font-family:\'JetBrains Mono\',monospace;">incomplete</span>'}
+      </td>
+      <td><span class="mono" style="font-size:0.75rem; color:var(--muted);">${i.date.slice(0,10)}</span></td>
+      <td>
+        <a href="/interview" class="btn btn-ghost" style="font-size:0.7rem; padding:0.3rem 0.7rem;">Retry</a>
+      </td>
+    </tr>`).join('');
+}
+
+function filterHistory(type, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'all') renderHistory(allHistory);
+  else renderHistory(allHistory.filter(i => i.interview_type === type));
+}
+
+loadHistory();
+</script>
+{% endblock %}

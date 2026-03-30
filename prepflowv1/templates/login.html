@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Login — PrepFlow{% endblock %}
+{% block extra_head %}
+<style>
+.auth-wrap { min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.auth-card { width: 100%; max-width: 400px; }
+.auth-header { margin-bottom: 2.5rem; }
+.auth-header h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: -0.03em; margin-bottom: 0.5rem; }
+.auth-header p { color: var(--accent); font-size: 0.875rem; }
+.form-group { margin-bottom: 1.25rem; }
+.divider { text-align: center; color: var(--muted); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; margin: 1.5rem 0; position: relative; }
+.divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: var(--border); }
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap auth-wrap">
+  <div class="auth-card">
+    <div class="auth-header">
+      <a href="/" class="mono" style="font-size:0.75rem; color:var(--muted); text-decoration:none; display:block; margin-bottom:2rem;">← back to home</a>
+      <div class="mono" style="font-size:0.7rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.5rem;">PrepFlow · Aditya Upadhyay</div>
+      <h1>Welcome back.</h1>
+      <p>Sign in to continue your interview preparation.</p>
+    </div>
+
+    <div class="card" style="border-radius:8px; padding:2rem;">
+      <div class="form-group">
+        <label class="label">Email</label>
+        <input type="email" id="email" class="input" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="label">Password</label>
+        <input type="password" id="password" class="input" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="error-msg" style="display:none; color:var(--red); font-size:0.8rem; font-family:'JetBrains Mono',monospace; margin-bottom:1rem; padding:0.75rem; background:rgba(255,68,68,0.05); border:1px solid rgba(255,68,68,0.2); border-radius:4px;"></div>
+      <button onclick="doLogin()" id="login-btn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;">
+        Sign In
+      </button>
+    </div>
+
+    <div class="divider">or</div>
+    <p style="text-align:center; font-size:0.85rem; color:var(--accent);">
+      Don't have an account? <a href="/signup" style="color:var(--text);">Sign up</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function doLogin() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('error-msg');
+
+  if (!email || !password) { showError('Please fill in all fields.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span> Signing in...';
+  btn.disabled = true;
+  err.style.display = 'none';
+
+  const res = await api('/api/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+
+  if (res.success) {
+    window.location.href = '/dashboard';
+  } else {
+    showError(res.error || 'Login failed.');
+    btn.innerHTML = 'Sign In';
+    btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  const err = document.getElementById('error-msg');
+  err.textContent = msg;
+  err.style.display = 'block';
+}
+
+document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+{% endblock %}
