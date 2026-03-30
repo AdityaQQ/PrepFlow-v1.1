@@ -68,4 +68,4 @@ os.makedirs('flask_session', exist_ok=True)
 app = app
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
