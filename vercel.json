@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "prepflow/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "prepflow/app.py"
+    }
+  ]
+}

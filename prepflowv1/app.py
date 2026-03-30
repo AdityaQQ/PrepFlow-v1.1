@@ -62,7 +62,10 @@ def history_page():
     if 'user_id' not in session: return redirect(url_for('login_page'))
     return render_template('history.html', user=session.get('user_name'))
 
-if __name__ == '__main__':
-    init_db()
-    os.makedirs('flask_session', exist_ok=True)
-    app.run(debug=True, port=5000)
+init_db()
+os.makedirs('flask_session', exist_ok=True)
+
+app = app
+
+if __name__ == "__main__":
+    app.run(debug=True)
