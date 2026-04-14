@@ -9,10 +9,13 @@ import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
 CORS(app, supports_credentials=True)
+
 app.register_blueprint(auth_bp)
 app.register_blueprint(interview_bp)
 app.register_blueprint(dashboard_bp)
+
 
 @app.route('/api/debug/test-ai')
 def test_ai():
@@ -23,54 +26,64 @@ def test_ai():
     )
     return jsonify({"raw": result, "key": Config.GROQ_API_KEY[:20]+"..."})
 
+
 @app.route('/')
 def index():
     return render_template('index.html', user=session.get('user_name'))
 
+
 @app.route('/login')
 def login_page():
-    if 'user_id' in session: return redirect(url_for('dashboard_page'))
+    if 'user_id' in session:
+        return redirect(url_for('dashboard_page'))
     return render_template('login.html')
+
 
 @app.route('/signup')
 def signup_page():
-    if 'user_id' in session: return redirect(url_for('dashboard_page'))
+    if 'user_id' in session:
+        return redirect(url_for('dashboard_page'))
     return render_template('signup.html')
+
 
 @app.route('/dashboard')
 def dashboard_page():
-    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
     return render_template('dashboard.html', user=session.get('user_name'))
+
 
 @app.route('/interview')
 def interview_page():
-    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
     return render_template('interview.html', user=session.get('user_name'))
+
 
 @app.route('/coding')
 def coding_page():
-    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
     return render_template('coding.html', user=session.get('user_name'))
+
 
 @app.route('/resume')
 def resume_page():
-    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
     return render_template('resume.html', user=session.get('user_name'))
+
 
 @app.route('/history')
 def history_page():
-    if 'user_id' not in session: return redirect(url_for('login_page'))
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
     return render_template('history.html', user=session.get('user_name'))
 
+
+# Initialize DB & session folder
 init_db()
 os.makedirs('flask_session', exist_ok=True)
 
-app = app
 
-if __name__ == "__main__":
-    app.run()
-import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+# IMPORTANT: No app.run() for Vercel
