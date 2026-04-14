@@ -9,7 +9,12 @@ from prepflowv1.routes.dashboard import dashboard_bp
 
 import os
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder="prepflowv1/templates",
+    static_folder="prepflowv1/static"
+)
+
 app.config.from_object(Config)
 
 CORS(app, supports_credentials=True)
