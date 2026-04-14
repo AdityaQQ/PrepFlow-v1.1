@@ -81,9 +81,8 @@ def history_page():
     return render_template('history.html', user=session.get('user_name'))
 
 
-# Initialize DB & session folder
-init_db()
-os.makedirs('flask_session', exist_ok=True)
-
-
-# IMPORTANT: No app.run() for Vercel
+# Safe DB init for Vercel
+try:
+    init_db()
+except Exception as e:
+    print("DB init skipped:", e)
