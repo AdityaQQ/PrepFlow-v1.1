@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 import json
 from ..models.database import get_db
-from routes.interview import call_ai_api, generate_questions
+from .interview import call_ai_api, generate_questions
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
