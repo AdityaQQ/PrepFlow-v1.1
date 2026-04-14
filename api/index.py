@@ -1,3 +1,4 @@
-from prepflowv1.app import app
+from prepflow1.app import app
 
-app = app
+def handler(request, response):
+    return app
