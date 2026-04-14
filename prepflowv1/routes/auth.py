@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 import hashlib
 import os
-from models.database import get_db
-
+from ..models.database import get_db
 auth_bp = Blueprint('auth', __name__)
 
 def hash_password(password: str) -> str:

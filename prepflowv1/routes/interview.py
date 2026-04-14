@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 import json, os, re
 import requests as http_requests
-from models.database import get_db
-
+from ..models.database import get_db
 interview_bp = Blueprint('interview', __name__)
 
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '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')
