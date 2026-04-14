@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from config import Config
+from prepflowv1.config import Config
 
 def get_db():
     conn = sqlite3.connect(Config.DATABASE)
