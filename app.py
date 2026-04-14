@@ -1,10 +1,12 @@
 from flask import Flask, render_template, session, redirect, url_for, jsonify
 from flask_cors import CORS
-from config import Config
-from models.database import init_db
-from routes.auth import auth_bp
-from routes.interview import interview_bp
-from routes.dashboard import dashboard_bp
+
+from prepflow1.config import Config
+from prepflow1.models.database import init_db
+from prepflow1.routes.auth import auth_bp
+from prepflow1.routes.interview import interview_bp
+from prepflow1.routes.dashboard import dashboard_bp
+
 import os
 
 app = Flask(__name__)
@@ -19,7 +21,7 @@ app.register_blueprint(dashboard_bp)
 
 @app.route('/api/debug/test-ai')
 def test_ai():
-    from routes.interview import call_ai_api
+    from prepflow1.routes.interview import call_ai_api
     result = call_ai_api(
         'Reply with exactly this JSON: {"status":"working","model":"llama-3.3-70b","app":"PrepFlow"}',
         'Reply with only JSON. No prose.'
