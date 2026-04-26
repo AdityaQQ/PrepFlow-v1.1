@@ -1,19 +1,20 @@
-# 🚀 PrepFlow — AI-Powered Coding Interview Platform
+# 🚀 PrepFlow — AI-Powered Interview Preparation Platform
 
 ## 🔥 Overview
 
-PrepFlow is a full-stack AI-powered coding interview platform built by **Aditya Upadhyay**.
-It allows users to practice DSA problems in a real coding environment and receive AI-based feedback on their solutions.
+PrepFlow is a full-stack AI-powered interview preparation platform built by **Aditya Upadhyay**.
+It enables users to practice coding problems, simulate interviews, and receive intelligent feedback using AI.
 
 ---
 
 ## ✨ Features
 
-* 🔐 User Authentication (Login / Signup)
-* 💻 Interactive Coding Editor
-* 🧠 DSA Problem Practice (Two Sum, Max Subarray, etc.)
-* 🤖 AI-Based Code Evaluation & Feedback
-* ⚡ Real-time execution UI with scoring system
+* 🔐 Secure Authentication System (Login / Signup)
+* 💻 Interactive Coding Environment
+* 🧠 DSA Problem Practice
+* 🤖 AI-Powered Interview & Code Evaluation
+* 📄 Resume-Based Interview System
+* 📝 Session History Tracking
 
 ---
 
@@ -29,39 +30,39 @@ It allows users to practice DSA problems in a real coding environment and receiv
 
 ## 📸 Screenshots
 
-### 🖥️ Platform Overview
+### 🔐 Login Page
 
-![Screenshot](assets/Screenshot 2026-04-26 175758.png)
-
----
-
-### 📊 Problem List & Dashboard
-
-![Screenshot](assets/Screenshot 2026-04-26 175839.png)
+<img src="assets/login.png" width="800"/>
 
 ---
 
 ### 💻 Coding Interface
 
-![Screenshot](assets/Screenshot 2026-04-26 175912.png)
+<img src="assets/coding.png" width="800"/>
 
 ---
 
-### 🤖 AI Evaluation
+### 🤖 AI Interview
 
-![Screenshot](assets/Screenshot 2026-04-26 175924.png)
-
----
-
-### 📈 Feedback & Results
-
-![Screenshot](assets/Screenshot 2026-04-26 175944.png)
+<img src="assets/interview.png" width="800"/>
 
 ---
 
-### ⚡ Additional View
+### 📄 Resume-Based Interview
 
-![Screenshot](assets/Screenshot 2026-04-26 180023.png)
+<img src="assets/resumebased.png" width="800"/>
+
+---
+
+### 📊 Session History
+
+<img src="assets/sessionhistory.png" width="800"/>
+
+---
+
+### 📑 Resume Upload / Analysis
+
+<img src="assets/resume.png" width="800"/>
 
 ---
 
@@ -71,7 +72,7 @@ It allows users to practice DSA problems in a real coding environment and receiv
 
 ---
 
-## ⚙️ Installation (Local Setup)
+## ⚙️ Installation
 
 ```bash
 git clone https://github.com/AdityaQQ/PrepFlow-v1.1.git
@@ -84,8 +85,6 @@ python app.py
 
 ## 🔑 Environment Variables
 
-Create a `.env` file in the root directory:
-
 ```
 GROQ_API_KEY=your_api_key
 SECRET_KEY=your_secret_key
@@ -93,31 +92,6 @@ SECRET_KEY=your_secret_key
 
 ---
 
-## 🧠 How It Works
-
-1. User logs in or signs up
-2. Selects a coding problem
-3. Writes solution in the built-in editor
-4. Submits code
-5. AI evaluates and provides feedback
-
----
-
-## 📌 Future Improvements
-
-* Secure sandboxed code execution
-* More advanced DSA problem sets
-* Time & space complexity analysis
-* Leaderboard and progress tracking
-
----
-
 ## 👨‍💻 Author
 
 **Aditya Upadhyay**
-B.Tech Computer Science
-Kalinga Institute of Industrial Technology (KIIT)
-
----
-
-⭐ Star this repo if you found it useful!
